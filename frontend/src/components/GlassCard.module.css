@@ -1,0 +1,27 @@
+.card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.04),
+    rgba(255, 255, 255, 0.01)
+  );
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.glow {
+  box-shadow: var(--shadow-card), var(--shadow-glow-green);
+  border-color: rgba(0, 255, 163, 0.25);
+}
+
+.hover {
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.hover:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 255, 163, 0.35);
+}

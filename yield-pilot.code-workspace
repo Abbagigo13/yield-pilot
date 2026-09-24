@@ -1,0 +1,19 @@
+{
+  "folders": [
+    {
+      "name": "📁 Contracts (Hardhat)",
+      "path": "contracts"
+    },
+    {
+      "name": "🧠 Backend (Node/AI)",
+      "path": "backend"
+    },
+    {
+      "name": "🎨 Frontend (Vite/React)",
+      "path": "frontend"
+    }
+  ],
+  "settings": {
+    "editor.formatOnSave": true
+  }
+}
