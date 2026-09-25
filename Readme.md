@@ -1,4 +1,4 @@
-Here's a comprehensive, contest-ready README.md for your project. Place it at the root: C:\Users\PC\yield-pilot\README.md.
+
 
 ```markdown
 # Yield Pilot
