@@ -1,6 +1,4 @@
 
-
-```markdown
 # Yield Pilot
 
 > **AI-powered yield optimization on Robinhood Chain (Arbitrum Orbit).**
@@ -114,7 +112,7 @@ git clone https://github.com/YOUR-USERNAME/yield-pilot.git
 cd yield-pilot
 ```
 
-2. Install Dependencies
+1. Install Dependencies
 
 ```bash
 # Contracts
@@ -133,7 +131,7 @@ npm install
 cd ..
 ```
 
-3. Configure Environment Variables
+1. Configure Environment Variables
 
 Create contracts/.env:
 
@@ -153,16 +151,16 @@ QWEN_MODEL=qwen-plus
 
 ⚠️ Never commit .env files. They're already in .gitignore.
 
-4. Run the Frontend
+1. Run the Frontend
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Open http://localhost:5173 — you should see the landing page with the 3D network animation.
+Open <http://localhost:5173> — you should see the landing page with the 3D network animation.
 
-5. Deploy the Contracts (optional)
+1. Deploy the Contracts (optional)
 
 ```bash
 cd contracts
@@ -173,7 +171,7 @@ npx hardhat ignition deploy ./ignition/modules/YieldVault.ts --network robinhood
 
 📁 Project Structure
 
-```
+```text
 yield-pilot/
 ├── contracts/                    # Solidity smart contracts (Hardhat 3)
 │   ├── contracts/
@@ -305,13 +303,8 @@ Built for Arbitrum Founder House Singapore 2026.
 
 · Project Lead: [Your Name]
 · Twitter: @yourhandle
-· Email: you@example.com
+· Email: <you@example.com>
 
 ---
 
-<p align="center">
-  <sub>Built with ⚡ during the Arbitrum Founder House Singapore Buildathon · October 2026</sub>
-</p>
-```
-
----
+Built with ⚡ during the Arbitrum Founder House Singapore Buildathon · October 2026
