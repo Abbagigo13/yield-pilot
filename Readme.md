@@ -1,4 +1,5 @@
 
+```markdown
 # Yield Pilot
 
 > **AI-powered yield optimization on Robinhood Chain (Arbitrum Orbit).**
