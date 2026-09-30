@@ -14,7 +14,7 @@ const client = axios.create({
 });
 
 // Flip to false once the backend is live
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 const delay = (ms = 250) => new Promise((res) => setTimeout(res, ms));
 

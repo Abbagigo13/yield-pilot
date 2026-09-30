@@ -127,3 +127,106 @@
 .send:not(:disabled):hover {
   transform: scale(1.05);
 }
+
+/* ---- Message wrappers ---- */
+.userWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.agentWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 100%;
+}
+
+/* ---- Tool Result Card ---- */
+.toolCard {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 255, 163, 0.06),
+    rgba(0, 212, 255, 0.04)
+  );
+  border: 1px solid rgba(0, 255, 163, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 85%;
+  min-width: 240px;
+  box-shadow: 0 0 20px rgba(0, 255, 163, 0.08);
+}
+
+.toolHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-green);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0, 255, 163, 0.15);
+  margin-bottom: 4px;
+}
+
+.toolIcon {
+  font-size: 12px;
+}
+
+.toolRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.toolLabel {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+}
+
+.toolValue {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-align: right;
+  font-family: var(--font-display);
+}
+
+.toolValueHighlight {
+  color: var(--accent-green);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: right;
+  font-family: var(--font-display);
+}
+
+.toolFooter {
+  font-size: 10px;
+  color: var(--warning);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 184, 0, 0.15);
+  margin-top: 2px;
+}
+
+.toolPre {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}

@@ -68,25 +68,35 @@ export default function Dashboard() {
 /* ---------- Tabs ---------- */
 
 function OverviewTab({ portfolio, status }) {
+  // Guard against null
+  const p = portfolio ?? {
+    totalDeposited: 0,
+    totalEarnings: 0,
+    currentApy: 0,
+    activeStrategy: '—',
+    change24h: 0,
+    allocation: [],
+  };
+
   return (
     <div className={styles.tabGrid}>
       <div className={styles.statsRow}>
         <StatCard
           label="Total Deposited"
-          value={formatUsd(portfolio.totalDeposited)}
-          sub={`${formatPercent(portfolio.change24h)} 24h`}
+          value={formatUsd(p.totalDeposited)}
+          sub={`${formatPercent(p.change24h)} 24h`}
           accent="green"
         />
         <StatCard
           label="Total Earnings"
-          value={formatUsd(portfolio.totalEarnings)}
+          value={formatUsd(p.totalEarnings)}
           sub="All-time"
           accent="blue"
         />
         <StatCard
           label="Current APY"
-          value={formatPercent(portfolio.currentApy)}
-          sub={`Active: ${portfolio.activeStrategy}`}
+          value={formatPercent(p.currentApy)}
+          sub={`Active: ${p.activeStrategy}`}
           accent="purple"
         />
         <StatCard
@@ -114,22 +124,28 @@ function OverviewTab({ portfolio, status }) {
             <span className={styles.cardSub}>Across active strategies</span>
           </div>
           <div className={styles.allocList}>
-            {portfolio.allocation.map((a) => (
-              <div key={a.name} className={styles.allocRow}>
-                <span className={styles.allocDot} style={{ background: a.color }} />
-                <span className={styles.allocName}>{a.name}</span>
-                <div className={styles.allocBar}>
-                  <motion.div
-                    className={styles.allocFill}
-                    style={{ background: a.color }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${a.value}%` }}
-                    transition={{ duration: 0.8, delay: 0.1 }}
-                  />
+            {p.allocation.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                No deposits yet. Fund the vault to see allocations.
+              </p>
+            ) : (
+              p.allocation.map((a) => (
+                <div key={a.name} className={styles.allocRow}>
+                  <span className={styles.allocDot} style={{ background: a.color }} />
+                  <span className={styles.allocName}>{a.name}</span>
+                  <div className={styles.allocBar}>
+                    <motion.div
+                      className={styles.allocFill}
+                      style={{ background: a.color }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${a.value}%` }}
+                      transition={{ duration: 0.8, delay: 0.1 }}
+                    />
+                  </div>
+                  <span className={styles.allocVal}>{a.value}%</span>
                 </div>
-                <span className={styles.allocVal}>{a.value}%</span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </GlassCard>
       </div>
