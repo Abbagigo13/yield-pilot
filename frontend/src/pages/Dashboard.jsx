@@ -9,6 +9,7 @@ import NetworkGraph3D from '../components/NetworkGraph3D';
 import AgentChat from '../components/AgentChat';
 import Loader from '../components/Loader';
 import AnimatedButton from '../components/AnimatedButton';
+import DepositPanel from '../components/DepositPanel';
 import { useYieldData } from '../hooks/useYieldData';
 import { useAgent } from '../hooks/useAgent';
 import { useWallet } from '../hooks/useWallet';
@@ -18,7 +19,7 @@ import styles from './Dashboard.module.css';
 export default function Dashboard() {
   const [tab, setTab] = useState('overview');
   const { address } = useWallet();
-  const { portfolio, strategies, history, loading } = useYieldData(address);
+  const { portfolio, strategies, history, loading, refetch } = useYieldData(address);
   const { status, logs, start, stop } = useAgent();
 
   return (
@@ -30,7 +31,9 @@ export default function Dashboard() {
           <div>
             <h1 className={styles.pageTitle}>{tab}</h1>
             <p className={styles.pageSub}>
-              {address ? `Connected: ${address.slice(0, 6)}…${address.slice(-4)}` : 'Wallet not connected'}
+              {address
+                ? `Connected: ${address.slice(0, 6)}…${address.slice(-4)}`
+                : 'Wallet not connected'}
             </p>
           </div>
           <WalletConnect />
@@ -49,7 +52,11 @@ export default function Dashboard() {
               className={styles.content}
             >
               {tab === 'overview' && (
-                <OverviewTab portfolio={portfolio} strategies={strategies} status={status} />
+                <OverviewTab
+                  portfolio={portfolio}
+                  status={status}
+                  refetch={refetch}
+                />
               )}
               {tab === 'strategies' && <StrategiesTab strategies={strategies} />}
               {tab === 'agent' && (
@@ -67,8 +74,7 @@ export default function Dashboard() {
 
 /* ---------- Tabs ---------- */
 
-function OverviewTab({ portfolio, status }) {
-  // Guard against null
+function OverviewTab({ portfolio, status, refetch }) {
   const p = portfolio ?? {
     totalDeposited: 0,
     totalEarnings: 0,
@@ -106,6 +112,8 @@ function OverviewTab({ portfolio, status }) {
           accent="pink"
         />
       </div>
+
+      <DepositPanel onSuccess={() => refetch?.()} />
 
       <div className={styles.twoCol}>
         <GlassCard className={styles.graphCard}>

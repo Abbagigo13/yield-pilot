@@ -1,3 +1,28 @@
+/* ---------- Connected state ---------- */
+.connectedWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.switchBtn {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 184, 0, 0.12);
+  border: 1px solid rgba(255, 184, 0, 0.35);
+  color: var(--warning);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 .connected {
   display: inline-flex;
   align-items: center;
@@ -9,7 +34,6 @@
   color: var(--accent-green);
   font-size: 13px;
   font-weight: 600;
-  font-family: var(--font-sans);
   letter-spacing: 0.02em;
 }
 
@@ -19,10 +43,159 @@
   border-radius: 50%;
   background: var(--accent-green);
   box-shadow: 0 0 10px var(--accent-green);
-  animation: pulse 1.6s ease-in-out infinite;
+  animation: dotPulse 1.6s ease-in-out infinite;
 }
 
-@keyframes pulse {
+@keyframes dotPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+/* ---------- Modal ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(
+    145deg,
+    rgba(26, 33, 51, 0.98),
+    rgba(15, 20, 32, 0.98)
+  );
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 255, 163, 0.08);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.modalHeader h3 {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+.closeBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 77, 109, 0.12);
+  color: var(--danger);
+}
+
+.modalSub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+
+.walletList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.walletItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s;
+}
+
+.walletItem:hover {
+  border-color: rgba(0, 255, 163, 0.3);
+}
+
+.walletItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.walletIcon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+}
+
+.walletInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.walletName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.walletType {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.walletArrow {
+  color: var(--text-muted);
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.walletItem:hover .walletArrow {
+  color: var(--accent-green);
+  transform: translateX(4px);
+}
+
+.modalFooter {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.modalFooter a {
+  color: var(--accent-green);
+  text-decoration: underline;
 }
