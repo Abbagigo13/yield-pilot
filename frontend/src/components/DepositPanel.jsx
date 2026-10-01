@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVault } from '../hooks/useVault';
 import { formatUsd } from '../utils/format';
@@ -9,31 +9,57 @@ import styles from './DepositPanel.module.css';
 export default function DepositPanel({ onSuccess }) {
   const vault = useVault();
   const [amount, setAmount] = useState('');
-  const [step, setStep] = useState('idle'); // idle | approving | approved | depositing | done
-  const [lastTxHash, setLastTxHash] = useState(null);
+  const [mode, setMode] = useState('deposit'); // 'deposit' | 'withdraw'
+  const [step, setStep] = useState('idle');
+  const lastTxHashRef = useRef(null);
+  const stepRef = useRef(step);
 
-  const numericAmount = Number(amount) || 0;
-  const needsApproval = numericAmount > 0 && vault.balances.allowance < numericAmount;
-  const hasEnough = numericAmount > 0 && numericAmount <= vault.balances.wallet;
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
+    const numericAmount = Number(amount) || 0;
+  const needsApproval =
+    mode === 'deposit' &&
+    numericAmount > 0 &&
+    vault.balances.allowance < numericAmount;
+  const hasEnough =
+    mode === 'deposit'
+      ? numericAmount > 0 && numericAmount <= vault.balances.wallet
+      : numericAmount > 0 && numericAmount <= vault.balances.vault;
   const canApprove = needsApproval && hasEnough && !vault.isPending && !vault.isConfirming;
   const canDeposit = !needsApproval && hasEnough && numericAmount > 0 && !vault.isPending && !vault.isConfirming;
+  const canWithdraw =
+    mode === 'withdraw' &&
+    hasEnough &&
+    numericAmount > 0 &&
+    !vault.isPending &&
+    !vault.isConfirming;
 
   // Watch tx completion
   useEffect(() => {
-    if (vault.isConfirmed && vault.txHash && vault.txHash !== lastTxHash) {
-      setLastTxHash(vault.txHash);
-      if (step === 'approving') {
+    if (!vault.isConfirmed || !vault.txHash || vault.txHash === lastTxHashRef.current) {
+      return;
+    }
+
+    lastTxHashRef.current = vault.txHash;
+    const currentStep = stepRef.current;
+
+    const timeoutId = setTimeout(() => {
+      if (currentStep === 'approving') {
         setStep('approved');
         vault.refetchAll();
-      } else if (step === 'depositing') {
+      } else if (currentStep === 'depositing' || currentStep === 'withdrawing') {
         setStep('done');
         setAmount('');
         vault.refetchAll();
         onSuccess?.();
         setTimeout(() => setStep('idle'), 3000);
       }
-    }
-  }, [vault.isConfirmed, vault.txHash, lastTxHash, step, vault, onSuccess]);
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [vault.isConfirmed, vault.txHash, vault, onSuccess]);
 
   const handleApprove = () => {
     if (!canApprove) return;
@@ -47,14 +73,24 @@ export default function DepositPanel({ onSuccess }) {
     vault.deposit(numericAmount);
   };
 
+  const handleWithdraw = () => {
+    if (!canWithdraw) return;
+    setStep('withdrawing');
+    vault.withdraw(numericAmount);
+  };
+
   const handleMax = () => {
-    setAmount(vault.balances.wallet.toString());
+    setAmount(
+      mode === 'deposit'
+        ? vault.balances.wallet.toString()
+        : vault.balances.vault.toString()
+    );
   };
 
   const handleReset = () => {
     vault.resetWrite();
     setStep('idle');
-    setLastTxHash(null);
+    lastTxHashRef.current = null;
   };
 
   return (
@@ -82,6 +118,20 @@ export default function DepositPanel({ onSuccess }) {
         </div>
       </div>
 
+      <div className={styles.modeTabs}>
+        <button
+          className={`${styles.modeTab} ${mode === 'deposit' ? styles.modeTabActive : ''}`}
+          onClick={() => { setMode('deposit'); setAmount(''); setStep('idle'); }}
+        >
+          Deposit
+        </button>
+        <button
+          className={`${styles.modeTab} ${mode === 'withdraw' ? styles.modeTabActive : ''}`}
+          onClick={() => { setMode('withdraw'); setAmount(''); setStep('idle'); }}
+        >
+          Withdraw
+        </button>
+      </div>
       <div className={styles.inputRow}>
         <div className={styles.inputWrap}>
           <input
@@ -107,12 +157,28 @@ export default function DepositPanel({ onSuccess }) {
 
       {vault.isConnected && numericAmount > 0 && !hasEnough && (
         <div className={styles.warning}>
-          Amount exceeds your wallet balance.
+          {mode === 'withdraw'
+            ? 'Amount exceeds your vault balance.'
+            : 'Amount exceeds your wallet balance.'}
         </div>
       )}
 
       <div className={styles.actions}>
-        {needsApproval ? (
+        {mode === 'withdraw' ? (
+          <AnimatedButton
+            onClick={handleWithdraw}
+            disabled={!canWithdraw}
+            className={styles.fullWidth}
+          >
+            {step === 'withdrawing'
+              ? 'Withdrawing…'
+              : vault.isConfirming
+              ? 'Confirming…'
+              : numericAmount > 0
+              ? `Withdraw ${numericAmount} USDC`
+              : 'Enter amount'}
+          </AnimatedButton>
+        ) : needsApproval ? (
           <AnimatedButton
             onClick={handleApprove}
             disabled={!canApprove}
@@ -164,7 +230,7 @@ export default function DepositPanel({ onSuccess }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            ✓ Deposit confirmed
+            "✓ {mode === 'deposit' ? 'Deposit' : 'Withdrawal'} confirmed"
             {vault.txHash && (
               <a
                 className={styles.txLink}

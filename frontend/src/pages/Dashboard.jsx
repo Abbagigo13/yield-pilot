@@ -63,7 +63,9 @@ export default function Dashboard() {
                 <AgentTab status={status} logs={logs} onStart={start} onStop={stop} />
               )}
               {tab === 'history' && <HistoryTab history={history} />}
-              {tab === 'settings' && <SettingsTab />}
+              {tab === 'settings' && (
+  <SettingsTab status={status} onStart={start} onStop={stop} />
+)}
             </motion.div>
           </AnimatePresence>
         )}
@@ -317,18 +319,157 @@ function HistoryTab({ history }) {
   );
 }
 
-function SettingsTab() {
+function SettingsTab({ status, onStart, onStop }) {
+  const [risk, setRisk] = useState('balanced');
+  const [maxPerStrategy, setMaxPerStrategy] = useState(50);
+  const [minApyDelta, setMinApyDelta] = useState(0.3);
+  const [notifications, setNotifications] = useState(true);
+  const [autoRebalance, setAutoRebalance] = useState(true);
+
   return (
     <div className={styles.tabGrid}>
-      <GlassCard>
-        <div className={styles.cardHead}>
-          <h3>Settings</h3>
-          <span className={styles.cardSub}>Coming soon</span>
-        </div>
-        <p style={{ color: 'var(--text-secondary)', fontSize: 14 }}>
-          Wallet preferences, notification settings, and advanced risk controls will appear here.
-        </p>
-      </GlassCard>
+      <div className={styles.settingsGrid}>
+        <GlassCard>
+          <div className={styles.cardHead}>
+            <h3>Agent Risk Profile</h3>
+            <span className={styles.cardSub}>
+              Controls how aggressively the agent rebalances
+            </span>
+          </div>
+
+          <div className={styles.riskSelector}>
+            {['conservative', 'balanced', 'aggressive'].map((r) => (
+              <button
+                key={r}
+                className={`${styles.riskBtn} ${
+                  risk === r ? styles.riskBtnActive : ''
+                }`}
+                onClick={() => setRisk(r)}
+              >
+                <span className={styles.riskBtnLabel}>
+                  {r.charAt(0).toUpperCase() + r.slice(1)}
+                </span>
+                <span className={styles.riskBtnDesc}>
+                  {r === 'conservative' && 'Low-risk only'}
+                  {r === 'balanced' && 'Mixed strategies'}
+                  {r === 'aggressive' && 'Maximize APY'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className={styles.cardHead}>
+            <h3>Limits & Thresholds</h3>
+            <span className={styles.cardSub}>
+              Guardrails the agent must respect
+            </span>
+          </div>
+
+          <div className={styles.sliderRow}>
+            <div className={styles.sliderHeader}>
+              <span>Max per Strategy</span>
+              <span className={styles.sliderValue}>{maxPerStrategy}%</span>
+            </div>
+            <input
+              type="range"
+              min="10"
+              max="90"
+              step="5"
+              value={maxPerStrategy}
+              onChange={(e) => setMaxPerStrategy(Number(e.target.value))}
+              className={styles.slider}
+            />
+            <p className={styles.sliderHelp}>
+              No single protocol can exceed this % of total deposits
+            </p>
+          </div>
+
+          <div className={styles.sliderRow}>
+            <div className={styles.sliderHeader}>
+              <span>Min APY Delta to Rebalance</span>
+              <span className={styles.sliderValue}>{minApyDelta}%</span>
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="2"
+              step="0.1"
+              value={minApyDelta}
+              onChange={(e) => setMinApyDelta(Number(e.target.value))}
+              className={styles.slider}
+            />
+            <p className={styles.sliderHelp}>
+              Agent only rebalances when yield difference exceeds this %
+            </p>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className={styles.cardHead}>
+            <h3>Notifications</h3>
+            <span className={styles.cardSub}>Stay informed</span>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div>
+              <span className={styles.toggleLabel}>Rebalance alerts</span>
+              <span className={styles.toggleDesc}>
+                Notify when the agent moves funds
+              </span>
+            </div>
+            <button
+              className={`${styles.toggle} ${
+                notifications ? styles.toggleOn : ''
+              }`}
+              onClick={() => setNotifications(!notifications)}
+            >
+              <span className={styles.toggleKnob} />
+            </button>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div>
+              <span className={styles.toggleLabel}>Auto-rebalance</span>
+              <span className={styles.toggleDesc}>
+                Let the agent act without manual approval
+              </span>
+            </div>
+            <button
+              className={`${styles.toggle} ${
+                autoRebalance ? styles.toggleOn : ''
+              }`}
+              onClick={() => setAutoRebalance(!autoRebalance)}
+            >
+              <span className={styles.toggleKnob} />
+            </button>
+          </div>
+        </GlassCard>
+
+        <GlassCard>
+          <div className={styles.cardHead}>
+            <h3>Danger Zone</h3>
+            <span className={styles.cardSub}>Emergency controls</span>
+          </div>
+
+          <div className={styles.dangerRow}>
+            <div>
+              <span className={styles.toggleLabel}>Emergency Stop</span>
+              <span className={styles.toggleDesc}>
+                Halt all agent activity immediately
+              </span>
+            </div>
+            {status?.active ? (
+              <AnimatedButton variant="danger" onClick={onStop}>
+                Stop Agent
+              </AnimatedButton>
+            ) : (
+              <AnimatedButton onClick={onStart}>Start Agent</AnimatedButton>
+            )}
+          </div>
+        </GlassCard>
+      </div>
     </div>
   );
 }
