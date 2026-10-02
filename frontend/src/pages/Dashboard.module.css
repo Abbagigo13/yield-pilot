@@ -526,3 +526,85 @@
   gap: 20px;
   padding-top: 6px;
 }
+
+@media (max-width: 900px) {
+  .main {
+    margin-left: 68px;
+    padding: 24px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding: 20px 16px 100px 16px; /* bottom padding for mobile nav */
+    min-height: 100vh;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 20px;
+  }
+
+  .pageTitle {
+    font-size: 22px;
+  }
+
+  .statsRow {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .twoCol,
+  .agentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .settingsGrid {
+    max-width: 100%;
+  }
+
+  .riskSelector {
+    grid-template-columns: 1fr;
+  }
+
+  .tableHead,
+  .tableRow {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 14px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+  }
+
+  .tableHead {
+    display: none; /* hide labels on mobile, use row labels */
+  }
+
+  .tableRow > span:first-child {
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .tableRow > span::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+}
+
+@media (max-width: 500px) {
+  .statsRow {
+    grid-template-columns: 1fr;
+  }
+  .graphWrap {
+    height: 240px;
+  }
+}

@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  background: rgba(10, 14, 23, 0.7);
+  background: rgba(10, 14, 23, 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-subtle);
@@ -19,6 +19,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .logoMark {
@@ -55,6 +56,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .launch {
@@ -73,14 +75,76 @@
   color: var(--accent-green);
 }
 
-@media (max-width: 768px) {
+/* ---------- Mobile Menu ---------- */
+
+.mobileMenuBtn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 18px;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileMenu {
+  display: none;
+  position: fixed;
+  top: var(--navbar-height);
+  left: 0;
+  right: 0;
+  background: rgba(10, 14, 23, 0.98);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 16px 20px 24px;
+  z-index: 99;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mobileLink {
+  font-size: 15px;
+  color: var(--text-secondary);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.mobileLink:last-of-type {
+  border-bottom: none;
+}
+
+/* ---------- Media Queries ---------- */
+
+@media (max-width: 900px) {
   .links {
     display: none;
+  }
+  .launch {
+    display: none;
+  }
+  .mobileMenuBtn {
+    display: flex;
+  }
+  .mobileMenu {
+    display: flex;
   }
   .nav {
     padding: 0 16px;
   }
-  .launch {
+  .brandName {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 500px) {
+  .nav {
+    padding: 0 12px;
+  }
+  .brandName {
     display: none;
   }
 }

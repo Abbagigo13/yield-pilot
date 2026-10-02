@@ -96,3 +96,28 @@ textarea {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* ---------------- Responsive Base ---------------- */
+@media (max-width: 768px) {
+  :root {
+    --navbar-height: 60px;
+    --sidebar-width: 60px;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* Prevent iOS zoom on input focus */
+@media screen and (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

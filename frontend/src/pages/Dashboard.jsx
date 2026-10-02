@@ -297,20 +297,23 @@ function HistoryTab({ history }) {
             <span>Tx</span>
           </div>
           {history.map((h) => (
-            <div key={h.id} className={styles.tableRow}>
+                        <div key={h.id} className={styles.tableRow}>
               <span
+                data-label="Type"
                 className={`${styles.typeBadge} ${
                   h.type === 'deposit' ? styles.deposit : styles.rebalance
                 }`}
               >
                 {h.type}
               </span>
-              <span>{formatUsd(h.amount)}</span>
-              <span className={styles.details}>
+              <span data-label="Amount">{formatUsd(h.amount)}</span>
+              <span data-label="Details" className={styles.details}>
                 {h.from && h.to ? `${h.from} → ${h.to}` : h.asset}
               </span>
-              <span>{timeAgo(h.timestamp)}</span>
-              <span className={styles.mono}>{h.txHash}</span>
+              <span data-label="Time">{timeAgo(h.timestamp)}</span>
+              <span data-label="Tx" className={styles.mono}>
+                {h.txHash}
+              </span>
             </div>
           ))}
         </div>
