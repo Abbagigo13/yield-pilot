@@ -9,6 +9,7 @@ import {
 } from 'wagmi';
 import { robinhoodTestnet } from '../utils/wagmi';
 import { formatAddress } from '../utils/format';
+import { useToast } from '../context/ToastContext';
 import AnimatedButton from './AnimatedButton';
 import styles from './WalletConnect.module.css';
 
@@ -19,15 +20,26 @@ export default function WalletConnect({ size = 'md' }) {
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
   const [showModal, setShowModal] = useState(false);
+    const toast = useToast();
 
   const isCorrectChain = chainId === robinhoodTestnet.id;
 
   // Auto-prompt chain switch if connected to wrong chain
   useEffect(() => {
+    if (isConnected && address) {
+      toast.success(
+        'Wallet connected',
+        `${formatAddress(address)} on chain ${chainId}`
+      );
+    }
+  }, [isConnected, address, chainId, toast]);
+
+  useEffect(() => {
     if (isConnected && !isCorrectChain) {
+      toast.warning('Wrong network', 'Switching to Robinhood Chain…');
       switchChain?.({ chainId: robinhoodTestnet.id });
     }
-  }, [isConnected, isCorrectChain, switchChain]);
+  }, [isConnected, isCorrectChain, switchChain, toast]);
 
   // ---- Connected state ----
   if (isConnected && address) {

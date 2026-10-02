@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { wagmiConfig } from './utils/wagmi';
+import { ToastProvider } from './context/ToastContext';
 import App from './App';
 import './index.css';
 
@@ -22,7 +23,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <App />
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </WagmiProvider>

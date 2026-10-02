@@ -5,11 +5,13 @@ import { formatUsd } from '../utils/format';
 import GlassCard from './GlassCard';
 import AnimatedButton from './AnimatedButton';
 import styles from './DepositPanel.module.css';
+import { useToast } from '../context/ToastContext';
 
 export default function DepositPanel({ onSuccess }) {
   const vault = useVault();
   const [amount, setAmount] = useState('');
   const [mode, setMode] = useState('deposit'); // 'deposit' | 'withdraw'
+  const toast = useToast();
   const [step, setStep] = useState('idle');
   const lastTxHashRef = useRef(null);
   const stepRef = useRef(step);
@@ -43,23 +45,34 @@ export default function DepositPanel({ onSuccess }) {
     }
 
     lastTxHashRef.current = vault.txHash;
-    const currentStep = stepRef.current;
+    const tx = vault.txHash;
 
     const timeoutId = setTimeout(() => {
-      if (currentStep === 'approving') {
+      if (stepRef.current === 'approving') {
         setStep('approved');
         vault.refetchAll();
-      } else if (currentStep === 'depositing' || currentStep === 'withdrawing') {
+        toast.success('Approval confirmed', 'You can now deposit');
+      } else if (stepRef.current === 'depositing') {
         setStep('done');
         setAmount('');
         vault.refetchAll();
         onSuccess?.();
-        setTimeout(() => setStep('idle'), 3000);
+        toast.success('Deposit confirmed', `Tx: ${tx.slice(0, 10)}…`);
+        const t = setTimeout(() => setStep('idle'), 3000);
+        return () => clearTimeout(t);
+      } else if (stepRef.current === 'withdrawing') {
+        setStep('done');
+        setAmount('');
+        vault.refetchAll();
+        onSuccess?.();
+        toast.success('Withdrawal confirmed', `Tx: ${tx.slice(0, 10)}…`);
+        const t = setTimeout(() => setStep('idle'), 3000);
+        return () => clearTimeout(t);
       }
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [vault.isConfirmed, vault.txHash, vault, onSuccess]);
+  }, [vault, onSuccess, toast]);
 
   const handleApprove = () => {
     if (!canApprove) return;
@@ -230,7 +243,7 @@ export default function DepositPanel({ onSuccess }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
           >
-            "✓ {mode === 'deposit' ? 'Deposit' : 'Withdrawal'} confirmed"
+            ✓ {mode === 'deposit' ? 'Deposit' : 'Withdrawal'} confirmed
             {vault.txHash && (
               <a
                 className={styles.txLink}
