@@ -70,7 +70,7 @@ export async function runAutopilotOnce() {
     const why = d.reason ? ` Reason: ${String(d.reason).slice(0, 160)}` : "";
 
   if (d.action === "none") {
-    addLog("scan", `Qwen reviewed the vault and proposed no move.${why}`);
+        addLog("scan", `Vault scanned: no move needed.${why}`);
     return;
   }
 
