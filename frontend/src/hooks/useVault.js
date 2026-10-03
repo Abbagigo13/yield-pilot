@@ -133,6 +133,20 @@ export function useVault() {
     },
     [vaultAddress, vaultBalance, userShares, decimals, writeContract]
   );
+
+    const mint = useCallback(
+    (amount) => {
+      if (!usdcAddress || !address) return;
+      const parsed = parseUnits(amount.toString(), decimals);
+      writeContract({
+        address: usdcAddress,
+        abi: ERC20_ABI,
+        functionName: 'mint',
+        args: [address, parsed],
+      });
+    },
+    [usdcAddress, address, decimals, writeContract]
+  );
     const refetchAll = useCallback(() => {
     refetchUsdc();
     refetchAllowance();
@@ -150,6 +164,7 @@ export function useVault() {
     approve,
     deposit,
     withdraw,
+    mint,
     refetchAll,
     txHash,
     isPending: isWritePending,

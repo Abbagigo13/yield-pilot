@@ -15,6 +15,7 @@ import { useAgent } from '../hooks/useAgent';
 import { useWallet } from '../hooks/useWallet';
 import { formatUsd, formatPercent, timeAgo } from '../utils/format';
 import styles from './Dashboard.module.css';
+import MintButton from '../components/MintButton';
 
 export default function Dashboard() {
   const [tab, setTab] = useState('overview');
@@ -116,6 +117,7 @@ function OverviewTab({ portfolio, status, refetch }) {
       </div>
 
       <DepositPanel onSuccess={() => refetch?.()} />
+              <MintButton />
 
       <div className={styles.twoCol}>
         <GlassCard className={styles.graphCard}>
