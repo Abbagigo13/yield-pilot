@@ -8,9 +8,14 @@ const ERC20_ABI = parseAbi([
 ]);
 
 const VAULT_ABI = parseAbi([
-  "function totalDeposits() view returns (uint256)",
-  "function balances(address) view returns (uint256)",
-  "function activeStrategy() view returns (address)",
+  "function totalAssets() view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function getStrategies() view returns (address[])",
+]);
+
+const STRATEGY_ABI = parseAbi([
+  "function apyBps() view returns (uint256)",
+  "function totalAssets() view returns (uint256)",
 ]);
 
 const client = createPublicClient({
@@ -29,65 +34,42 @@ export type Strategy = {
   risk: "low" | "medium" | "high";
   address: string;
   color: string;
+    allocation: number;
 };
 
-/* ---------------- Mock APYs (fallback until real protocols integrate) --- */
+const COLORS = ["#00ffa3", "#00d4ff", "#a855f7", "#ff2d92"];
 
-const MOCK_STRATEGIES: Strategy[] = [
-  {
-    id: "aave-usdc",
-    name: "Aave V3",
-    asset: "USDC",
-    apy: 4.2,
-    tvl: 1_250_000,
-    risk: "low",
-    address: "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
-    color: "#00ffa3",
-  },
-  {
-    id: "compound-usdc",
-    name: "Compound V3",
-    asset: "USDC",
-    apy: 3.8,
-    tvl: 820_000,
-    risk: "low",
-    address: "0xA5EDBDD9646f8dFF606d7448e414884C7d905dCA",
-    color: "#00d4ff",
-  },
-  {
-    id: "uniswap-eth-usdc",
-    name: "Uniswap V3",
-    asset: "ETH/USDC",
-    apy: 12.5,
-    tvl: 2_100_000,
-    risk: "medium",
-    address: "0xC31E54c7a869B9FcBEcc14363CF510d1c41fa443",
-    color: "#a855f7",
-  },
-  {
-    id: "radiant-usdc",
-    name: "Radiant",
-    asset: "USDC",
-    apy: 6.1,
-    tvl: 540_000,
-    risk: "medium",
-    address: "0x8E7a5A4B2c7c6aC7c7a2C7D9b0b0b0b0b0b0b0b0",
-    color: "#ff2d92",
-  },
-];
-
-/* ---------------- Public API ---------------- */
-
-/**
- * Returns all whitelisted strategies with current APY.
- * Currently uses static APYs — hook up live protocol reads when available.
- */
 export async function getStrategies(): Promise<Strategy[]> {
-  // Add small random jitter every call to simulate live APY ticking
-  return MOCK_STRATEGIES.map((s) => ({
-    ...s,
-    apy: +(s.apy + (Math.random() - 0.5) * 0.15).toFixed(2),
-  }));
+  const vaultAddress = process.env.VAULT_ADDRESS as `0x${string}`;
+  const usdcAddress = process.env.USDC_ADDRESS as `0x${string}`;
+
+  const [addresses, decimals, totalRaw] = await Promise.all([
+    client.readContract({ address: vaultAddress, abi: VAULT_ABI, functionName: "getStrategies" }),
+    client.readContract({ address: usdcAddress, abi: ERC20_ABI, functionName: "decimals" }),
+    client.readContract({ address: vaultAddress, abi: VAULT_ABI, functionName: "totalAssets" }),
+  ]);
+  const total = Number(formatUnits(totalRaw, decimals));
+
+  return Promise.all(
+    addresses.map(async (address, i) => {
+      const [apyBps, tvlRaw] = await Promise.all([
+        client.readContract({ address, abi: STRATEGY_ABI, functionName: "apyBps" }),
+        client.readContract({ address, abi: STRATEGY_ABI, functionName: "totalAssets" }),
+      ]);
+      const tvl = Number(formatUnits(tvlRaw, decimals));
+      return {
+        id: `mock-strategy-${i + 1}`,
+        name: `Mock Strategy ${String.fromCharCode(65 + i)}`,
+        asset: "USDC",
+        apy: Number(apyBps) / 100,
+        tvl,
+        allocation: total > 0 ? +((tvl / total) * 100).toFixed(1) : 0,
+        risk: "low" as const,
+        address,
+        color: COLORS[i % COLORS.length],
+      };
+    })
+  );
 }
 
 export async function getBestYield(asset = "USDC"): Promise<Strategy | null> {
@@ -112,12 +94,12 @@ export async function getOnChainPortfolio(userAddress: `0x${string}`) {
       client.readContract({
         address: vaultAddress,
         abi: VAULT_ABI,
-        functionName: "totalDeposits",
+        functionName: "totalAssets"
       }),
       client.readContract({
         address: vaultAddress,
         abi: VAULT_ABI,
-        functionName: "balances",
+        functionName: "balanceOf",
         args: [userAddress],
       }),
       client.readContract({
@@ -140,4 +122,19 @@ export async function getOnChainPortfolio(userAddress: `0x${string}`) {
     userVaultBalance: fmt(userBalance),
     userWalletBalance: fmt(walletBalance),
   };
+}
+
+export async function getVaultState() {
+  const vaultAddress = process.env.VAULT_ADDRESS as `0x${string}`;
+  const usdcAddress = process.env.USDC_ADDRESS as `0x${string}`;
+
+  const [totalRaw, decimals, strategies] = await Promise.all([
+    client.readContract({ address: vaultAddress, abi: VAULT_ABI, functionName: "totalAssets" }),
+    client.readContract({ address: usdcAddress, abi: ERC20_ABI, functionName: "decimals" }),
+    getStrategies(),
+  ]);
+
+  const total = Number(formatUnits(totalRaw, decimals));
+  const deployed = strategies.reduce((sum, s) => sum + s.tvl, 0);
+  return { total, idle: Math.max(0, total - deployed), strategies };
 }

@@ -1,5 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import Toast from '../components/Toast';
 
 const ToastContext = createContext(null);
@@ -7,23 +6,28 @@ const ToastContext = createContext(null);
 export function ToastProvider({ children }) {
   const [toast, setToast] = useState(null);
 
-  const show = (type, title, message, duration = 4000) => {
+  const show = useCallback((type, title, message, duration = 4000) => {
     setToast({ id: Date.now(), type, title, message, duration });
-  };
+  }, []);
 
-  const api = {
-    show,
-    dismiss: () => setToast(null),
-    success: (title, message) => show('success', title, message),
-    error: (title, message) => show('error', title, message),
-    info: (title, message) => show('info', title, message),
-    warning: (title, message) => show('warning', title, message),
-  };
+  const dismiss = useCallback(() => setToast(null), []);
+
+  const api = useMemo(
+    () => ({
+      show,
+      dismiss,
+      success: (title, message) => show('success', title, message),
+      error: (title, message) => show('error', title, message),
+      info: (title, message) => show('info', title, message),
+      warning: (title, message) => show('warning', title, message),
+    }),
+    [show, dismiss]
+  );
 
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <Toast toast={toast} onDismiss={dismiss} />
     </ToastContext.Provider>
   );
 }

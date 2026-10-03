@@ -119,7 +119,7 @@ Your job:
 - When asked about the best yield, call get_best_yield.
 - When asked about a portfolio, call get_portfolio_status.
 
-Available protocols: Aave V3, Compound V3, Uniswap V3, Radiant.
+Available strategies: the whitelisted strategies returned by get_best_yield (currently two test strategies).
 
 Risk guidelines:
 - Never exceed 50% allocation to a single protocol.
@@ -169,4 +169,113 @@ export async function chat(
     content: msg.content || "",
     toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
   };
+}
+
+export type VaultStateForAI = {
+  total: number;
+  idle: number;
+  strategies: Array<{ address: string; name: string; apy: number; tvl: number }>;
+};
+
+export type Decision = {
+  action: "none" | "allocate" | "rebalance";
+  from?: string | null;
+  to?: string | null;
+  amountUsdc?: number;
+  reason?: string;
+};
+
+export async function decideAllocation(state: VaultStateForAI): Promise<Decision> {
+  const floor2 = (n: number) => Math.floor(n * 100) / 100;
+  const capUsdc = floor2(state.total * 0.5);
+  const strategies = state.strategies.map((s) => ({
+    ...s,
+    headroom: Math.max(0, floor2(capUsdc - s.tvl)),
+  }));
+
+  // Every move the vault rules would allow right now
+  const validMoves: Array<{
+    action: "allocate" | "rebalance";
+    from: string | null;
+    fromName: string;
+    to: string;
+    toName: string;
+    maxUsdc: number;
+    apyGainPoints: number;
+  }> = [];
+
+  for (const t of strategies) {
+    if (t.headroom < 1) continue;
+
+    const idleMax = floor2(Math.min(state.idle, t.headroom));
+    if (idleMax >= 1) {
+      validMoves.push({
+        action: "allocate",
+        from: null,
+        fromName: "idle cash",
+        to: t.address,
+        toName: t.name,
+        maxUsdc: idleMax,
+        apyGainPoints: t.apy,
+      });
+    }
+
+    for (const f of strategies) {
+      if (f.address === t.address) continue;
+      if (f.tvl < 1 || t.apy < f.apy + 0.5) continue;
+      const max = floor2(Math.min(f.tvl, t.headroom));
+      if (max >= 1) {
+        validMoves.push({
+          action: "rebalance",
+          from: f.address,
+          fromName: f.name,
+          to: t.address,
+          toName: t.name,
+          maxUsdc: max,
+          apyGainPoints: +(t.apy - f.apy).toFixed(2),
+        });
+      }
+    }
+  }
+
+  if (validMoves.length === 0) {
+    return { action: "none", reason: "No legal move available right now." };
+  }
+
+  const res = await client.chat.completions.create({
+    model: QWEN_MODEL,
+    temperature: 0,
+    max_tokens: 250,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "You manage a USDC yield vault. You are given validMoves, a list of every legal move. " +
+          "Pick the ONE move with the largest apyGainPoints. " +
+          "Reply with one json object only: " +
+          '{"action":"allocate|rebalance","from":"0x... or null","to":"0x...","amountUsdc":number,"reason":"short"}. ' +
+          "Copy action, from and to exactly from the chosen move. Set amountUsdc to that move's maxUsdc, never more. " +
+          "reason: ONE sentence, max 20 words, naming the strategies and their APYs. No calculations. " +
+          "Output the json object and nothing else.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify({
+          strategies: strategies.map((s) => ({
+            name: s.name,
+            apyPercent: s.apy,
+            tvlUsdc: s.tvl,
+          })),
+          validMoves,
+        }),
+      },
+    ],
+  });
+
+  try {
+    return JSON.parse(res.choices[0].message.content || "{}") as Decision;
+  } catch {
+    return { action: "none", reason: "could not parse model output" };
+  }
 }

@@ -12,10 +12,11 @@ const DeployYieldStack = buildModule("DeployYieldStack", (m) => {
   // 1. Deploy Mock USDC (6 decimals not enforced, but OK for tests)
   const usdc = m.contract("MockERC20", ["Mock USD Coin", "mUSDC"]);
 
-  // 2. Deploy YieldVault — constructor(asset, owner)
+  // 2. Deploy YieldVault — constructor(asset, owner, strategyDelay)
   // The deployer account becomes the initial owner
   const deployer = m.getAccount(0);
-  const vault = m.contract("YieldVault", [usdc, deployer]);
+  // strategyDelay = 0 for testing; use 86400 (1 day) in production
+  const vault = m.contract("YieldVault", [usdc, deployer, 0n]);
 
   return { usdc, vault };
 });

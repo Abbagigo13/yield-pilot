@@ -10,11 +10,16 @@ import { privateKeyToAccount } from "viem/accounts";
 import { robinhoodTestnet } from "../chains.js";
 
 const VAULT_ABI = parseAbi([
-  "function deposit(uint256 amount)",
-  "function withdraw(uint256 amount)",
-  "function rebalance(address newStrategy, uint256 amount)",
-  "function totalDeposits() view returns (uint256)",
-  "function balances(address) view returns (uint256)",
+  "function deposit(uint256 amount) returns (uint256)",
+  "function withdraw(uint256 shareAmount) returns (uint256)",
+  "function allocate(address strategy, uint256 amount)",
+  "function deallocate(address strategy, uint256 amount)",
+  "function rebalance(address from, address to, uint256 amount)",
+  "function totalAssets() view returns (uint256)",
+  "function totalShares() view returns (uint256)",
+  "function shares(address) view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function convertToShares(uint256) view returns (uint256)",
   "function asset() view returns (address)",
 ]);
 
@@ -127,11 +132,18 @@ export async function withdraw(amount: number, userAddress: `0x${string}`) {
 
   const parsed = parseUnits(amount.toString(), decimals);
 
+    const sharesToBurn = await publicClient.readContract({
+    address: VAULT_ADDRESS,
+    abi: VAULT_ABI,
+    functionName: "convertToShares",
+    args: [parsed],
+  });
+
   const hash = await walletClient.writeContract({
     address: VAULT_ADDRESS,
     abi: VAULT_ABI,
     functionName: "withdraw",
-    args: [parsed],
+    args: [sharesToBurn],
   });
 
   return await publicClient.waitForTransactionReceipt({ hash });
@@ -139,8 +151,8 @@ export async function withdraw(amount: number, userAddress: `0x${string}`) {
 
 /* ---------------- Rebalance ---------------- */
 
-export async function rebalance(
-  newStrategyAddress: `0x${string}`,
+export async function allocate(
+  strategyAddress: `0x${string}`,
   amount: number
 ) {
   const decimals = await publicClient.readContract({
@@ -148,15 +160,34 @@ export async function rebalance(
     abi: ERC20_ABI,
     functionName: "decimals",
   });
+  const parsed = parseUnits(amount.toString(), decimals);
 
+  const hash = await walletClient.writeContract({
+    address: VAULT_ADDRESS,
+    abi: VAULT_ABI,
+    functionName: "allocate",
+    args: [strategyAddress, parsed],
+  });
+  return await publicClient.waitForTransactionReceipt({ hash });
+}
+
+export async function rebalance(
+  fromAddress: `0x${string}`,
+  toAddress: `0x${string}`,
+  amount: number
+) {
+  const decimals = await publicClient.readContract({
+    address: USDC_ADDRESS,
+    abi: ERC20_ABI,
+    functionName: "decimals",
+  });
   const parsed = parseUnits(amount.toString(), decimals);
 
   const hash = await walletClient.writeContract({
     address: VAULT_ADDRESS,
     abi: VAULT_ABI,
     functionName: "rebalance",
-    args: [newStrategyAddress, parsed],
+    args: [fromAddress, toAddress, parsed],
   });
-
   return await publicClient.waitForTransactionReceipt({ hash });
 }

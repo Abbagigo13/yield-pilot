@@ -77,7 +77,9 @@ export default function StatCard({
     >
       <span className={styles.label}>{label}</span>
       <span className={styles.value}>
-        {inView ? formatLike(value, animated) : value}
+                {inView && parseTargetValue(value) != null
+          ? formatLike(value, animated)
+          : value}
       </span>
       {sub && <span className={styles.sub}>{sub}</span>}
     </motion.div>

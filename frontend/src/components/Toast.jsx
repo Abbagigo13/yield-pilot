@@ -19,9 +19,12 @@ const COLORS = {
 export default function Toast({ toast, onDismiss }) {
   useEffect(() => {
     if (!toast) return;
-    const timer = setTimeout(() => onDismiss?.(), toast.duration || 4000);
+    const duration = toast.duration || 4000;
+    const timer = setTimeout(() => {
+      onDismiss?.();
+    }, duration);
     return () => clearTimeout(timer);
-  }, [toast, onDismiss]);
+  }, [toast?.id, onDismiss]);
 
   return (
     <div className={styles.stack}>
@@ -43,15 +46,13 @@ export default function Toast({ toast, onDismiss }) {
                 <div className={styles.message}>{toast.message}</div>
               )}
             </div>
-            <button className={styles.close} onClick={onDismiss}>
+            <button
+              className={styles.close}
+              onClick={() => onDismiss?.()}
+              aria-label="Close"
+            >
               ✕
             </button>
-            <motion.div
-              className={styles.progress}
-              initial={{ width: '100%' }}
-              animate={{ width: '0%' }}
-              transition={{ duration: (toast.duration || 4000) / 1000, ease: 'linear' }}
-            />
           </motion.div>
         )}
       </AnimatePresence>

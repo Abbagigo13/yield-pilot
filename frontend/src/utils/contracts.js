@@ -1,8 +1,9 @@
+import { parseAbi } from 'viem';
 export const CONTRACTS = {
-  robinhoodTestnet: {
+robinhoodTestnet: {
     chainId: 46630,
-    usdc: "0xDFE4295e2D13a09fAb84Eb244Df583a0af20a17f",
-    vault: "0xA59A6eA444Ed1959DaC38b2Ae02DA4D97ADf1418",
+    usdc: "0x251bEa83FCf334a292Ac25006Acc3889e394587B",
+    vault: "0xC1117e87618C5789734C43839F2F45800CB22796",
   },
   arbitrumSepolia: {
     chainId: 421614,
@@ -11,70 +12,22 @@ export const CONTRACTS = {
   },
 };
 
-export const VAULT_ABI = [
-  {
-    inputs: [{ name: "amount", type: "uint256" }],
-    name: "deposit",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ name: "amount", type: "uint256" }],
-    name: "withdraw",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ name: "", type: "address" }],
-    name: "balances",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "totalDeposits",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "asset",
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-];
+export const VAULT_ABI = parseAbi([
+  'function deposit(uint256 amount) returns (uint256)',
+  'function withdraw(uint256 shareAmount) returns (uint256)',
+  'function balanceOf(address) view returns (uint256)',
+  'function shares(address) view returns (uint256)',
+  'function totalAssets() view returns (uint256)',
+  'function totalShares() view returns (uint256)',
+  'function convertToShares(uint256) view returns (uint256)',
+  'function getStrategies() view returns (address[])',
+  'function asset() view returns (address)',
+]);
 
-export const ERC20_ABI = [
-  {
-    inputs: [
-      { name: "spender", type: "address" },
-      { name: "amount", type: "uint256" },
-    ],
-    name: "approve",
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { name: "owner", type: "address" },
-      { name: "spender", type: "address" },
-    ],
-    name: "allowance",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-];
+export const ERC20_ABI = parseAbi([
+  'function approve(address spender, uint256 amount) returns (bool)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function balanceOf(address account) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
+]);

@@ -50,7 +50,15 @@ export function useVault() {
   const { data: vaultBalance, refetch: refetchVault } = useReadContract({
     address: vaultAddress,
     abi: VAULT_ABI,
-    functionName: 'balances',
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    query: { enabled: !!address && !!vaultAddress },
+  });
+
+    const { data: userShares, refetch: refetchShares } = useReadContract({
+    address: vaultAddress,
+    abi: VAULT_ABI,
+    functionName: 'shares',
     args: address ? [address] : undefined,
     query: { enabled: !!address && !!vaultAddress },
   });
@@ -107,25 +115,30 @@ export function useVault() {
     [vaultAddress, decimals, writeContract]
   );
 
-  const withdraw = useCallback(
+    const withdraw = useCallback(
     (amount) => {
-      if (!vaultAddress) return;
+      if (!vaultAddress || !vaultBalance || !userShares) return;
       const parsed = parseUnits(amount.toString(), decimals);
+      const sharesToBurn =
+        parsed >= vaultBalance
+          ? userShares
+          : (parsed * userShares) / vaultBalance;
+      if (sharesToBurn === 0n) return;
       writeContract({
         address: vaultAddress,
         abi: VAULT_ABI,
         functionName: 'withdraw',
-        args: [parsed],
+        args: [sharesToBurn],
       });
     },
-    [vaultAddress, decimals, writeContract]
+    [vaultAddress, vaultBalance, userShares, decimals, writeContract]
   );
-
-  const refetchAll = useCallback(() => {
+    const refetchAll = useCallback(() => {
     refetchUsdc();
     refetchAllowance();
     refetchVault();
-  }, [refetchUsdc, refetchAllowance, refetchVault]);
+    refetchShares();
+  }, [refetchUsdc, refetchAllowance, refetchVault, refetchShares]);
 
   return {
     isConnected: !!address,

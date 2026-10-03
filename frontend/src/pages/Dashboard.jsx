@@ -194,7 +194,7 @@ function StrategiesTab({ strategies }) {
               </span>
               <span>{s.asset}</span>
               <span className={styles.apy}>{formatPercent(s.apy)}</span>
-              <span>${(s.tvl / 1_000_000).toFixed(2)}M</span>
+              <span>{formatUsd(s.tvl)}</span>
               <span>
                 <RiskMeter risk={s.risk} />
               </span>

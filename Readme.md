@@ -1,311 +1,234 @@
-
-```markdown
 # Yield Pilot
 
-> **AI-powered yield optimization on Robinhood Chain (Arbitrum Orbit).**
-> Autonomous agents that scan DeFi protocols, rebalance capital, and maximize yields — while you sleep.
+**An AI agent that moves your USDC to the best yield, inside guardrails the smart contract enforces.**
 
-[![Built for Arbitrum Founder House](https://img.shields.io/badge/Built%20for-Arbitrum%20Founder%20House%20Singapore-00ffa3)](https://arbitrum-singapore.hackquest.io/)
-[![Chain](https://img.shields.io/badge/Chain-Robinhood%20Testnet%20(46630)-00d4ff)](#)
-[![AI](https://img.shields.io/badge/AI-Qwen%20(Alibaba%20Cloud)-a855f7)](#)
+Yield Pilot is a non-custodial yield vault on **Robinhood Chain** (an Arbitrum Orbit L2) with an autonomous agent attached. Users deposit USDC and get vault shares. The agent, powered by **Qwen**, watches the available strategies and decides where the money should sit. It can only move funds between strategies the owner has whitelisted, and it can never send funds to an arbitrary address. Every limit is enforced on-chain, so even a misbehaving AI cannot break the rules.
 
----
-
-## 📖 Overview
-
-**Yield Pilot** is an AI agent that manages your DeFi yield strategy autonomously. Deposit USDC into the vault, set your risk tolerance, and let the agent continuously scan protocols like Aave, Compound, and Uniswap for the best risk-adjusted yield — rebalancing automatically when opportunities shift.
-
-Built specifically for **Robinhood Chain**, an Arbitrum Orbit L2 designed for real-world assets and financial-grade products.
-
-### The Problem
-
-DeFi yields are volatile, fragmented across dozens of protocols, and require constant monitoring to stay optimal. Retail users miss out on 2–8% APY gains simply because they can't watch 15 dashboards 24/7.
-
-### The Solution
-
-An autonomous agent that:
-- **Scans** all whitelisted protocols every few minutes
-- **Reasons** about risk-adjusted returns using an LLM (Qwen)
-- **Executes** rebalances on-chain with hard risk limits you control
-- **Reports** every decision transparently in a real-time dashboard
+Built for the Arbitrum Founder House Singapore buildathon.
 
 ---
 
-## ✨ Features
+## Why it exists
 
-### 🤖 Autonomous Yield Agent
-- Continuous monitoring of Aave V3, Compound V3, Uniswap V3, and more
-- Natural-language commands ("move to lower risk", "find best USDC yield")
-- Transparent decision log with reasoning for every action
-- Hard risk limits: max allocation per protocol, min APY delta to trigger rebalance
+Most "AI + DeFi" demos let a model hold keys and hope for the best. Yield Pilot takes the opposite approach: the model only proposes, and the code and the contract decide.
 
-### 📊 Real-Time Dashboard
-- Live portfolio stats (deposits, earnings, APY, active strategy)
-- 3D network visualization of yield opportunities
-- Allocation breakdown with animated bars
-- Full transaction history with on-chain links
-- Agent control panel (start/pause, adjust risk profile)
-
-### 🔐 Non-Custodial by Design
-- Users retain full control of their capital
-- Withdraw anytime, no lockups
-- Agent operates through a restricted controller role
-- Risk limits enforced at the smart contract level
-
-### ⛓️ Built on Robinhood Chain
-- Native to Robinhood Chain testnet (Chain ID: 46630)
-- Uses ETH as gas token
-- Arbitrum Nitro stack for maximum EVM compatibility
-- Deployable to Arbitrum One with minimal changes
+- The AI is a **decision-maker, not a custodian**.
+- Its permissions are narrow: allocate idle funds, move funds between whitelisted strategies, pull funds back.
+- Its proposals are checked twice, once by the backend and once by the contract.
 
 ---
 
-## 🏗️ Architecture
+## How it works
 
+```text
+ Users ──deposit / withdraw──▶  YieldVault  ◀──allocate / rebalance──  Agent wallet
+                                    │                                       ▲
+                       ┌────────────┼────────────┐                          │
+                       ▼            ▼            ▼                          │
+                  Strategy A   Strategy B   Strategy C                      │
+                                    ▲                                       │
+                                    │ APY + TVL (on-chain reads)            │
+   Scanner ─────────────────────────┘                                       │
+      │                                                                     │
+      ▼                                                                     │
+   Backend computes every LEGAL move ──▶ Qwen picks the best one ──▶ Backend re-validates ─┘
 ```
 
-┌─────────────────────────────────────────────────────────────┐
-│                      Yield Pilot Stack                      │
-└─────────────────────────────────────────────────────────────┘
+Each autopilot cycle (every 60 seconds by default):
 
-┌──────────────┐      ┌──────────────┐      ┌──────────────┐
-│   Frontend   │◄────►│   Backend    │◄────►│  Contracts   │
-│  Vite/React  │      │ Node + Qwen  │      │   Solidity   │
-└──────────────┘      └──────────────┘      └──────────────┘
-│                     │                      │
-│                     │                      │
-3D Network            AI Reasoning           Yield Vault
-Dashboard             Yield Scanner          Strategy Adapters
-Wallet (wagmi)        viem execution         Risk Controller
-│                     │                      │
-└─────────────────────┼──────────────────────┘
-│
-┌──────▼──────┐
-│  Robinhood  │
-│    Chain    │
-│  (Arbitrum) │
-└─────────────┘
-
-```
-
-### Components
-
-| Layer | Tech | Purpose |
-|-------|------|---------|
-| **Smart Contracts** | Solidity 0.8.24, Hardhat 3 | Yield vault, strategy adapters, agent controller |
-| **Backend Agent** | Node.js, TypeScript, viem | Yield scanner, AI reasoning (Qwen), execution |
-| **Frontend** | React 19, Vite, Three.js, wagmi | 3D dashboard, wallet, user controls |
-| **AI** | Qwen (Alibaba Cloud DashScope) | Natural-language reasoning, decision support |
+1. **Scan.** Read the vault's strategies, their APY and their balances from the chain.
+2. **Compute.** The backend lists every move the vault rules would allow right now (cap headroom, APY gain, available balance).
+3. **Decide.** Qwen picks the legal move with the biggest APY gain and explains it in one sentence. If no legal move exists, Qwen is not even called.
+4. **Validate.** The backend re-checks the proposal against the same rules.
+5. **Execute.** Only then does the agent send a transaction, and the contract checks the rules again.
+6. **Log.** Every decision, including blocked ones, is written to an activity log with the transaction hash, and shown in the dashboard.
 
 ---
 
-## 🚀 Quick Start
+## Safety design
 
-### Prerequisites
-- **Node.js** v22+ ([download](https://nodejs.org))
-- **Git** ([download](https://git-scm.com))
-- A wallet with testnet ETH (e.g., MetaMask)
+| Layer | What it enforces |
+| --- | --- |
+| **Smart contract** | Only whitelisted strategies. Max 50% of total assets per strategy (checked whenever funds are moved in). New rebalance must beat the old strategy's APY by at least 0.5 points. Agent role cannot withdraw to arbitrary addresses. |
+| **Strategy timelock** | New strategies must be proposed, wait `strategyDelay`, then be activated. It is 0 on the testnet demo and meant to be 1 day in production. A strategy must be empty before it can be removed. |
+| **Emergency controls** | `pause()` blocks deposits and agent moves (withdrawals stay open). `emergencyExit()` pauses and pulls every strategy back to the vault. Ownership transfer uses `Ownable2Step`. |
+| **Accounting** | Share-based (ERC-4626 style) so yield accrues to depositors. 1,000 shares are locked forever to block the first-depositor inflation attack. Deposits credit the amount actually received. |
+| **Backend** | Re-validates every proposal. A `AUTOPILOT_EXECUTE=false` switch runs the agent in dry-run mode (logs only). |
+| **Chat** | The chat assistant can answer questions, but its `execute_rebalance` tool only returns a pending intent. Only the validated autopilot can move funds. |
 
-### 1. Clone & Install
-
-```bash
-git clone https://github.com/YOUR-USERNAME/yield-pilot.git
-cd yield-pilot
-```
-
-1. Install Dependencies
-
-```bash
-# Contracts
-cd contracts
-npm install
-cd ..
-
-# Backend
-cd backend
-npm install
-cd ..
-
-# Frontend
-cd frontend
-npm install
-cd ..
-```
-
-1. Configure Environment Variables
-
-Create contracts/.env:
-
-```env
-RH_RPC_URL=https://rpc.testnet.chain.robinhood.com
-PRIVATE_KEY=0xYOUR_TEST_WALLET_PRIVATE_KEY
-```
-
-Create backend/.env:
-
-```env
-RH_RPC_URL=https://rpc.testnet.chain.robinhood.com
-PRIVATE_KEY=0xYOUR_TEST_WALLET_PRIVATE_KEY
-DASHSCOPE_API_KEY=your_alibaba_cloud_api_key
-QWEN_MODEL=qwen-plus
-```
-
-⚠️ Never commit .env files. They're already in .gitignore.
-
-1. Run the Frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-Open <http://localhost:5173> — you should see the landing page with the 3D network animation.
-
-1. Deploy the Contracts (optional)
-
-```bash
-cd contracts
-npx hardhat ignition deploy ./ignition/modules/YieldVault.ts --network robinhoodTestnet
-```
+You can see these in action: the activity log records proposals the code blocked, with the reason.
 
 ---
 
-📁 Project Structure
+## Live deployment (Robinhood Chain testnet, chain ID 46630)
+
+| Contract | Address |
+| --- | --- |
+| YieldVault | `0xC1117e87618C5789734C43839F2F45800CB22796` |
+| MockERC20 (mUSDC) | `0x251bEa83FCf334a292Ac25006Acc3889e394587B` |
+| Mock Strategy A | `0x17c6bd28cec3752602d5cf5924097e0a0bf2f8f7` |
+| Mock Strategy B | `0x79ff5a115d0b7ad5b2daa939d64ee01a1599ecad` |
+| Mock Strategy C | `0x51645e43881A6DAba3e2D8b861c3Db08CB18f24d` |
+
+RPC: `https://rpc.testnet.chain.robinhood.com`
+
+The demo strategies report configurable APYs (for example 12%, 8% and 15%), which lets you watch the agent react when rates change.
+
+---
+
+## Tech stack
+
+- **Contracts:** Solidity 0.8.24, OpenZeppelin v5, Hardhat 3, viem, Hardhat Ignition
+- **Backend:** Node.js, TypeScript, Express, viem, Qwen via Alibaba Cloud DashScope (OpenAI-compatible API)
+- **Frontend:** React, Vite, wagmi and viem, Framer Motion
+
+---
+
+## Repository layout
 
 ```text
 yield-pilot/
-├── contracts/                    # Solidity smart contracts (Hardhat 3)
+├── contracts/
 │   ├── contracts/
-│   │   └── YieldVault.sol        # Main vault + agent controller
-│   ├── ignition/modules/         # Deployment scripts
-│   ├── test/                     # Contract tests
-│   └── hardhat.config.ts
-│
-├── backend/                      # AI agent + on-chain execution
-│   ├── src/                      # TypeScript source
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── frontend/                     # React + Vite + Three.js
-│   ├── src/
-│   │   ├── components/           # Reusable UI + 3D network graph
-│   │   ├── pages/                # Landing + Dashboard
-│   │   ├── hooks/                # useWallet, useAgent, useYieldData
-│   │   ├── utils/                # wagmi config, API, mock data
-│   │   └── styles/               # Global CSS variables
-│   └── index.html
-│
-└── yield-pilot.code-workspace    # VS Code multi-root workspace
+│   │   ├── YieldVault.sol        # vault, shares, risk limits, timelock, pause
+│   │   ├── IStrategy.sol         # interface every strategy adapter implements
+│   │   ├── MockERC20.sol         # test token (anyone can mint)
+│   │   └── mocks/MockStrategy.sol
+│   ├── ignition/modules/DeployYieldStack.ts
+│   ├── scripts/                  # setup-vault, smoke-test, add-strategy-c, set-apy
+│   └── test/YieldVault.ts        # 13 tests
+├── backend/
+│   └── src/
+│       ├── agent/                # scanner, qwen, autopilot, executor
+│       └── api/server.ts         # REST API for the dashboard
+└── frontend/                     # React dashboard
 ```
 
 ---
 
-🎨 Design System
+## Run it yourself
 
-Yield Pilot uses a futuristic DeFi aesthetic:
+You need Node.js 20 or newer, a wallet with Robinhood testnet ETH for gas, and a DashScope API key for Qwen.
 
-Token Value Usage
---bg-primary #0a0e17 Deep navy background
---accent-green #00ffa3 Primary CTA, success states
---accent-blue #00d4ff Secondary highlights
---accent-purple #a855f7 Accent gradients
---accent-pink #ff2d92 Warnings, alerts
-
-· Typography: Inter (body) + Space Grotesk (display)
-· Effects: Glassmorphism cards, neon glows, animated gradients
-· Motion: Framer Motion for UI + React Three Fiber for 3D
-
----
-
-🧠 How the AI Agent Works
-
-1. Scan — Every N minutes, the agent fetches APYs and TVL from all whitelisted protocols via on-chain calls and APIs.
-2. Reason — The current portfolio state and opportunities are passed to Qwen with a structured prompt. The LLM returns a decision (e.g., rebalance(from: Aave, to: Uniswap, amount: 500 USDC)).
-3. Validate — The decision is validated against hard risk limits defined in the smart contract (max allocation per protocol, minimum APY delta, etc.).
-4. Execute — If valid, the agent calls YieldVault.rebalance() with the appropriate parameters. The transaction is signed by the agent's wallet.
-5. Report — Every decision is logged on-chain (event) and displayed in the dashboard with reasoning.
-
----
-
-🗺️ Roadmap
-
-✅ Phase 1 — Hackathon MVP (Current)
-
-☑ 3D landing page with animated network graph
-☑ Dashboard with portfolio, strategies, agent, history tabs
-☑ YieldVault smart contract scaffold
-☑ Mock data throughout frontend
-☐ Deploy contracts to Robinhood Chain testnet
-☐ Wire backend to Qwen for real AI decisions
-☐ Real on-chain deposits/withdrawals
-
-🔜 Phase 2 — Post-Hackathon
-
-☐ Multi-asset vaults (ETH, WBTC, RWA tokens)
-☐ More strategy adapters (GMX, Radiant, Pendle)
-☐ Backtesting engine for strategy simulation
-☐ Telegram/Discord bot for alerts
-☐ Mobile app (React Native)
-
-🔮 Phase 3 — Mainnet
-
-☐ Robinhood Chain mainnet deployment
-☐ Audit + bug bounty
-☐ Governance token for strategy curation
-☐ Institutional yield products
-
----
-
-🧪 Testing
+### 1. Contracts
 
 ```bash
-# Contracts
 cd contracts
-npx hardhat test
+npm install
+npx hardhat build
+npx hardhat test nodejs
+```
 
-# Frontend
+Create `contracts/.env`:
+
+```bash
+RH_RPC_URL=https://rpc.testnet.chain.robinhood.com
+PRIVATE_KEY=0xYOUR_TESTNET_PRIVATE_KEY
+```
+
+Deploy:
+
+```bash
+npx hardhat ignition deploy ignition/modules/DeployYieldStack.ts --network robinhoodTestnet
+```
+
+Then set the agent, deploy mock strategies, whitelist them and mint test tokens. Edit the addresses at the top of the script first:
+
+```bash
+npx hardhat run scripts/setup-vault.ts --network robinhoodTestnet
+```
+
+### 2. Backend
+
+Create `backend/.env`:
+
+```dotenv
+RH_RPC_URL=https://rpc.testnet.chain.robinhood.com
+PRIVATE_KEY=0xAGENT_WALLET_PRIVATE_KEY
+VAULT_ADDRESS=0x...
+USDC_ADDRESS=0x...
+DASHSCOPE_API_KEY=your_key
+QWEN_MODEL=qwen-plus
+PORT=3001
+AUTOPILOT_EXECUTE=false
+AUTOPILOT_INTERVAL_SEC=60
+```
+
+```bash
+cd backend
+npm install
+npx tsx src/index.ts
+```
+
+`AUTOPILOT_EXECUTE=false` is dry-run mode: the agent logs what it would do. Set it to `true` to let it send transactions.
+
+### 3. Frontend
+
+```bash
 cd frontend
-npm run lint
+npm install
+npm run dev
+```
+
+Open the printed address, connect a wallet, switch to Robinhood testnet, and deposit mUSDC.
+
+---
+
+## Demo walkthrough
+
+1. Connect a wallet on the dashboard and deposit mUSDC (approve first, then deposit).
+2. Watch the **Agent** tab. The autopilot allocates idle funds into strategies, up to the 50% cap each.
+3. Change a strategy's APY to simulate the market moving:
+
+   ```bash
+   cd contracts
+   $env:STRAT="A"; $env:APY_BPS="1200"; npx hardhat run scripts/set-apy.ts --network robinhoodTestnet
+   ```
+
+   (PowerShell syntax shown. On macOS or Linux use `STRAT=A APY_BPS=1200 npx hardhat run ...`.)
+4. Within a cycle the agent rebalances toward the higher yield, and the move appears in the log with its transaction hash.
+5. Withdraw any time. The vault pulls funds back from strategies automatically if it needs liquidity.
+
+---
+
+## Tests
+
+`contracts/test/YieldVault.ts` has 13 passing tests covering deposits and withdrawals, share accounting and yield, the cumulative 50% cap, the minimum APY gain, rejection of non-whitelisted strategies, withdrawal pulling funds back from strategies, the strategy timelock, pause behavior, emergency exit, and the zero-address checks.
+
+```bash
+cd contracts
+npx hardhat test nodejs
 ```
 
 ---
 
-🤝 Contributing
+## Known limitations
 
-This is a hackathon project, but contributions are welcome. Open an issue or submit a PR.
+This is a hackathon prototype on a testnet. It has not been audited, and it should not hold real funds.
 
-1. Fork the repo
-2. Create a feature branch (git checkout -b feature/amazing-thing)
-3. Commit your changes (git commit -m 'Add amazing thing')
-4. Push to the branch (git push origin feature/amazing-thing)
-5. Open a Pull Request
-
----
-
-📜 License
-
-MIT — see LICENSE for details.
+- **Strategies are mocks.** The demo strategies hold tokens and report an APY you can set, but they do not generate real yield. The strategy interface (`IStrategy`) is how real adapters for lending protocols would plug in. Those adapters are not built yet.
+- **Cap drift on withdrawals.** The 50% cap is checked whenever the agent moves funds in. A user withdrawal takes liquidity from strategies in list order, which can leave one strategy temporarily above 50% until the next rebalance.
+- **Demo wallet roles.** In the testnet demo, the same wallet is the vault owner and the agent. In production these should be separate keys, with the owner behind a multisig.
+- **Dashboard gaps.** The Settings page is display-only for now (the real limits are the contract's), and the History page does not yet read on-chain events.
+- **Earnings are not tracked.** Total earnings shows zero because the mock strategies do not accrue yield.
 
 ---
 
-🙏 Acknowledgements
+## Roadmap
 
-· Arbitrum Foundation and Offchain Labs for the Founder House program
-· Robinhood Chain for the L2 infrastructure
-· Alibaba Cloud for Qwen API access
-· OpenZeppelin for battle-tested contracts
-· Vercel for the frontend tooling inspiration
-
----
-
-📬 Contact
-
-Built for Arbitrum Founder House Singapore 2026.
-
-· Project Lead: [Your Name]
-· Twitter: @yourhandle
-· Email: <you@example.com>
+- Real strategy adapters for lending protocols on Robinhood Chain and Arbitrum
+- Withdrawals that respect the cap (lowest-APY-first or proportional), and risk-reducing rebalances out of an over-cap strategy
+- Real on-chain transaction history and per-user earnings
+- Wire the dashboard settings and Pause/Stop controls to the agent
+- Separate owner, agent and guardian roles, plus an independent security review
 
 ---
 
-Built with ⚡ during the Arbitrum Founder House Singapore Buildathon · October 2026
+## Author
+
+**Umar Idris (Abbagigo)** · Blockchain engineer and Web3 builder
+GitHub: [@Abbagigo13](https://github.com/Abbagigo13) · X: [@UmarIDR97364671](https://x.com/UmarIDR97364671) · Telegram: [@abbagigo](https://t.me/abbagigo) · [abbagigo.bond](https://abbagigo.bond)
+
+## License
+
+MIT, see [LICENSE](./LICENSE).

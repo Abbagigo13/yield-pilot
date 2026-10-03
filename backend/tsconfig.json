@@ -13,9 +13,7 @@
     "noEmit": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "types": ["node"],
-    "baseUrl": ".",
-    "ignoreDeprecations": "6.0"
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

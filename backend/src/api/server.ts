@@ -5,12 +5,10 @@ import {
   getStrategies,
   getBestYield,
   getOnChainPortfolio,
+  getVaultState,
 } from "../agent/scanner.js";
-import {
-  getAgentAddress,
-  getAgentBalances,
-  rebalance,
-} from "../agent/executor.js";
+import { getAgentAddress, getAgentBalances } from "../agent/executor.js";
+import { getLog, getStats, startedAt } from "../agent/autopilot.js";
 
 export function createServer() {
   const app = express();
@@ -34,17 +32,29 @@ export function createServer() {
     try {
       const address = req.params.address as `0x${string}`;
       const portfolio = await getOnChainPortfolio(address);
+      const state = await getVaultState();
+
+      const blendedApy =
+        state.total > 0
+          ? state.strategies.reduce((sum, s) => sum + s.apy * s.tvl, 0) / state.total
+          : 0;
+      const biggest = [...state.strategies].sort((a, b) => b.tvl - a.tvl)[0];
+      const pct = (v: number) =>
+        state.total > 0 ? +((v / state.total) * 100).toFixed(1) : 0;
+
       res.json({
         totalDeposited: portfolio.totalDeposits,
-        totalEarnings: 0, // TODO: compute from history
-        currentApy: 5.42,
-        activeStrategy: "Aave V3",
-        change24h: 0.84,
+        totalEarnings: 0,
+        currentApy: +blendedApy.toFixed(2),
+        activeStrategy: biggest && biggest.tvl > 0 ? biggest.name : "None",
+        change24h: 0,
         allocation: [
-          { name: "Aave V3", value: 45, color: "#00ffa3" },
-          { name: "Compound V3", value: 30, color: "#00d4ff" },
-          { name: "Uniswap V3", value: 15, color: "#a855f7" },
-          { name: "Radiant", value: 10, color: "#ff2d92" },
+          ...state.strategies.map((s) => ({
+            name: s.name,
+            value: pct(s.tvl),
+            color: s.color,
+          })),
+          { name: "Idle", value: pct(state.idle), color: "#64748b" },
         ],
         onChain: portfolio,
       });
@@ -70,11 +80,13 @@ export function createServer() {
   app.get("/api/agent/status", async (_req, res) => {
     try {
       const balances = await getAgentBalances();
+      const stats = getStats();
       res.json({
         active: true,
-        lastRebalance: Date.now() - 2 * 60 * 60 * 1000,
-        decisionsCount: 47,
-        uptimeHours: 312,
+        mode: process.env.AUTOPILOT_EXECUTE === "true" ? "live" : "dry-run",
+        lastRebalance: stats.lastRebalance,
+        decisionsCount: stats.decisionsCount,
+        uptimeHours: +((Date.now() - startedAt) / 3_600_000).toFixed(1),
         riskTolerance: "balanced",
         maxPerStrategy: 50,
         agentAddress: getAgentAddress(),
@@ -86,38 +98,7 @@ export function createServer() {
   });
 
   app.get("/api/agent/logs", (_req, res) => {
-    res.json([
-      {
-        id: "log-1",
-        timestamp: Date.now() - 2 * 60 * 60 * 1000,
-        type: "rebalance",
-        message: "Moved 15% USDC from Compound → Aave (APY diff +0.4%)",
-      },
-      {
-        id: "log-2",
-        timestamp: Date.now() - 6 * 60 * 60 * 1000,
-        type: "scan",
-        message: "Scanned 12 yield opportunities across 4 protocols",
-      },
-      {
-        id: "log-3",
-        timestamp: Date.now() - 14 * 60 * 60 * 1000,
-        type: "risk",
-        message: "Detected ETH/USDC impermanent loss above threshold, reduced exposure",
-      },
-      {
-        id: "log-4",
-        timestamp: Date.now() - 26 * 60 * 60 * 1000,
-        type: "rebalance",
-        message: "Increased Uniswap V3 allocation by 5% (fees up 22%)",
-      },
-      {
-        id: "log-5",
-        timestamp: Date.now() - 48 * 60 * 60 * 1000,
-        type: "info",
-        message: "Agent initialized with balanced risk profile",
-      },
-    ]);
+    res.json(getLog().slice(0, 50));
   });
 
   app.post("/api/agent/start", (_req, res) => res.json({ ok: true }));
@@ -147,7 +128,7 @@ export function createServer() {
           const addr = call.arguments.userAddress as `0x${string}`;
           toolResult = await getOnChainPortfolio(addr);
         } else if (call.name === "execute_rebalance") {
-          // For demo: don't auto-execute, just log intent
+          // Chat never moves funds: only the autopilot does, after validation.
           toolResult = {
             status: "pending_confirmation",
             intent: call.arguments,
@@ -171,26 +152,7 @@ export function createServer() {
   /* ---------------- History ---------------- */
 
   app.get("/api/history/:address", (_req, res) => {
-    res.json([
-      {
-        id: "tx-1",
-        type: "deposit",
-        amount: 5000,
-        asset: "USDC",
-        timestamp: Date.now() - 3 * 24 * 60 * 60 * 1000,
-        txHash: "0xabc123...def456",
-      },
-      {
-        id: "tx-2",
-        type: "rebalance",
-        amount: 1200,
-        asset: "USDC",
-        from: "Compound V3",
-        to: "Aave V3",
-        timestamp: Date.now() - 2 * 24 * 60 * 60 * 1000,
-        txHash: "0x789ghi...012jkl",
-      },
-    ]);
+    res.json([]); // TODO: read real Deposited/Withdrawn events from the vault
   });
 
   return app;

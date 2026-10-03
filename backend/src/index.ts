@@ -2,6 +2,7 @@ import "dotenv/config";
 import { createServer } from "./api/server.js";
 import { getStrategies } from "./agent/scanner.js";
 import { getAgentAddress, getAgentBalances } from "./agent/executor.js";
+import { startAutopilot } from "./agent/autopilot.js";
 
 const PORT = Number(process.env.PORT) || 3001;
 
@@ -41,6 +42,7 @@ async function main() {
       console.warn("[scan] error:", (e as Error).message);
     }
   }, 60_000);
+    startAutopilot();
 }
 
 main().catch((e) => {
