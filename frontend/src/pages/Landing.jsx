@@ -10,7 +10,7 @@ const FEATURES = [
   {
     icon: '◈',
     title: 'Autonomous Rebalancing',
-    desc: 'Agents monitor yields 24/7 and move capital into the best opportunities automatically.',
+        desc: 'The agent checks the vault on a schedule and moves capital between whitelisted strategies, within limits the contract enforces.',
   },
   {
     icon: '◎',
@@ -156,20 +156,20 @@ export default function Landing() {
       <section id="stats" className={styles.section}>
         <GlassCard glow className={styles.statsCard}>
           <div className={styles.statBlock}>
-            <span className={styles.statValue}>4.8%</span>
-            <span className={styles.statLabel}>Avg. APY</span>
+            <span className={styles.statValue}>3.8%</span>
+            <span className={styles.statLabel}>Demo strategies</span>
           </div>
           <div className={styles.statBlock}>
-            <span className={styles.statValue}>$2.4M</span>
-            <span className={styles.statLabel}>Total Value Locked</span>
+            <span className={styles.statValue}>50%S</span>
+            <span className={styles.statLabel}>Max per strategy (on-chain)</span>
           </div>
           <div className={styles.statBlock}>
-            <span className={styles.statValue}>12+</span>
-            <span className={styles.statLabel}>Yield Sources</span>
+            <span className={styles.statValue}>0.5 pt</span>
+            <span className={styles.statLabel}>Min APY gain to rebalance</span>
           </div>
           <div className={styles.statBlock}>
             <span className={styles.statValue}>24/7</span>
-            <span className={styles.statLabel}>Agent Uptime</span>
+            <span className={styles.statLabel}>Passing contract tests</span>
           </div>
         </GlassCard>
       </section>
@@ -178,9 +178,9 @@ export default function Landing() {
       <footer className={styles.footer}>
         <span>© {new Date().getFullYear()} Yield Pilot · Built for Arbitrum Founder House</span>
         <div className={styles.footerLinks}>
-          <a href="#">Docs</a>
-          <a href="#">GitHub</a>
-          <a href="#">Twitter</a>
+                    <a href="https://github.com/Abbagigo13/yield-pilot#readme" target="_blank" rel="noreferrer">Docs</a>
+          <a href="https://github.com/Abbagigo13/yield-pilot" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://x.com/UmarIDR97364671" target="_blank" rel="noreferrer">Twitter</a>
         </div>
       </footer>
     </motion.div>
