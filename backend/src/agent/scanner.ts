@@ -138,3 +138,99 @@ export async function getVaultState() {
   const deployed = strategies.reduce((sum, s) => sum + s.tvl, 0);
   return { total, idle: Math.max(0, total - deployed), strategies };
 }
+
+const EVENTS_ABI = parseAbi([
+  "event Deposited(address indexed user, uint256 assets, uint256 shares)",
+  "event Withdrawn(address indexed user, uint256 assets, uint256 shares)",
+  "event Allocated(address indexed strategy, uint256 amount)",
+  "event Deallocated(address indexed strategy, uint256 amount)",
+  "event Rebalanced(address indexed from, address indexed to, uint256 amount)",
+]);
+
+let cachedLogs: { at: number; logs: any[] } | null = null;
+
+async function fetchVaultLogs(vault: `0x${string}`): Promise<any[]> {
+  if (cachedLogs && Date.now() - cachedLogs.at < 30_000) return cachedLogs.logs;
+
+  const latest = await client.getBlockNumber();
+  const fallbackStart = latest > 1_500_000n ? latest - 1_500_000n : 0n;
+  let from = process.env.VAULT_DEPLOY_BLOCK ? BigInt(process.env.VAULT_DEPLOY_BLOCK) : fallbackStart;
+  let step = 50_000n;
+  const all: any[] = [];
+
+  while (from <= latest) {
+    const to = from + step - 1n > latest ? latest : from + step - 1n;
+    try {
+      const part = await client.getLogs({
+        address: vault,
+        events: EVENTS_ABI,
+        fromBlock: from,
+        toBlock: to,
+      });
+      all.push(...part);
+      from = to + 1n;
+    } catch (e) {
+      if (step <= 2_000n) throw e;
+      step = step / 2n; // the RPC rejected the range, so retry with a smaller one
+    }
+  }
+
+  cachedLogs = { at: Date.now(), logs: all };
+  return all;
+}
+
+export async function getHistory(userAddress: string) {
+  const vault = process.env.VAULT_ADDRESS as `0x${string}`;
+  const usdc = process.env.USDC_ADDRESS as `0x${string}`;
+
+  const [logs, decimals, strategies] = await Promise.all([
+    fetchVaultLogs(vault),
+    client.readContract({ address: usdc, abi: ERC20_ABI, functionName: "decimals" }),
+    getStrategies().catch(() => [] as Strategy[]),
+  ]);
+
+  const nameOf = (addr: string) =>
+    strategies.find((s) => s.address.toLowerCase() === addr.toLowerCase())?.name ??
+    `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  const me = userAddress.toLowerCase();
+  const fmt = (v: bigint) => Number(formatUnits(v, decimals));
+
+  // the user's own deposits and withdrawals, plus every agent move in the vault
+  const relevant = logs.filter((l: any) =>
+    l.eventName === "Deposited" || l.eventName === "Withdrawn"
+      ? String(l.args.user).toLowerCase() === me
+      : true
+  );
+
+  const blocks = [...new Set(relevant.map((l: any) => l.blockNumber as bigint))];
+  const stamps = new Map<bigint, number>();
+  await Promise.all(
+    blocks.map(async (b) => {
+      const blk = await client.getBlock({ blockNumber: b });
+      stamps.set(b, Number(blk.timestamp) * 1000);
+    })
+  );
+
+  return relevant
+    .map((l: any) => {
+      const base = {
+        id: `${l.transactionHash}-${l.logIndex}`,
+        asset: "USDC",
+        timestamp: stamps.get(l.blockNumber) ?? 0,
+        txHash: l.transactionHash,
+      };
+      switch (l.eventName) {
+        case "Deposited":
+          return { ...base, type: "deposit", amount: fmt(l.args.assets) };
+        case "Withdrawn":
+          return { ...base, type: "withdraw", amount: fmt(l.args.assets) };
+        case "Allocated":
+          return { ...base, type: "rebalance", amount: fmt(l.args.amount), from: "Idle funds", to: nameOf(l.args.strategy) };
+        case "Deallocated":
+          return { ...base, type: "rebalance", amount: fmt(l.args.amount), from: nameOf(l.args.strategy), to: "Idle funds" };
+        default:
+          return { ...base, type: "rebalance", amount: fmt(l.args.amount), from: nameOf(l.args.from), to: nameOf(l.args.to) };
+      }
+    })
+    .sort((a: any, b: any) => b.timestamp - a.timestamp);
+}

@@ -6,6 +6,7 @@ import {
   getBestYield,
   getOnChainPortfolio,
   getVaultState,
+  getHistory,
 } from "../agent/scanner.js";
 import { getAgentAddress, getAgentBalances } from "../agent/executor.js";
 import { getLog, getStats, startedAt } from "../agent/autopilot.js";
@@ -151,8 +152,13 @@ export function createServer() {
 
   /* ---------------- History ---------------- */
 
-  app.get("/api/history/:address", (_req, res) => {
-    res.json([]); // TODO: read real Deposited/Withdrawn events from the vault
+    app.get("/api/history/:address", async (req, res) => {
+    try {
+      res.json(await getHistory(req.params.address));
+    } catch (e) {
+      console.error("[history]", e);
+      res.status(500).json({ error: (e as Error).message });
+    }
   });
 
   return app;
