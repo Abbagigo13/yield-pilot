@@ -138,7 +138,7 @@ export function createServer() {
 
       res.json({
         role: "agent",
-        content: reply.content || "I've analyzed the options. Check the results below.",
+                content: (reply.content || "I've analyzed the options. Check the results below.").replace(/\*\*/g, ""),
         toolCalls: reply.toolCalls,
         toolResult,
         timestamp: Date.now(),

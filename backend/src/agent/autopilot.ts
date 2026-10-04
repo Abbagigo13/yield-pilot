@@ -20,6 +20,8 @@ export type LogEntry = {
   type: "scan" | "rebalance" | "risk" | "info";
   message: string;
   txHash?: string;
+    baseMessage?: string;
+  repeat?: number;
 };
 
 const LOG_FILE = resolve(process.cwd(), "data", "autopilot-log.json");
@@ -33,13 +35,22 @@ try {
 }
 
 function addLog(type: LogEntry["type"], message: string, txHash?: string) {
-  log.unshift({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    timestamp: Date.now(),
-    type,
-    message,
-    txHash,
-  });
+  const last = log[0];
+  if (type === "scan" && last && last.type === "scan" && last.baseMessage === message) {
+    last.repeat = (last.repeat ?? 1) + 1;
+    last.timestamp = Date.now();
+    last.message = `${message} (checked ${last.repeat} times)`;
+  } else {
+    log.unshift({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: Date.now(),
+      type,
+      message,
+      baseMessage: message,
+      repeat: 1,
+      txHash,
+    });
+  }
   log = log.slice(0, MAX_LOG);
   try {
     mkdirSync(dirname(LOG_FILE), { recursive: true });
@@ -56,7 +67,7 @@ export function getLog() {
 export function getStats() {
   const lastMove = log.find((l) => l.type === "rebalance");
   return {
-    decisionsCount: log.length,
+        decisionsCount: log.reduce((n, l) => n + (l.repeat ?? 1), 0),
     lastRebalance: lastMove ? lastMove.timestamp : null,
   };
 }

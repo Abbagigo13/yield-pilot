@@ -126,7 +126,8 @@ Risk guidelines:
 - Prefer low-risk protocols for capital preservation requests.
 - Explain decisions in plain English.
 
-Keep responses under 120 words unless the user asks for detail.`;
+Keep responses under 120 words unless the user asks for detail.
+Write plain text only: no markdown, no asterisks, no bullet lists. Use short sentences.`;
 
 export async function chat(
   userMessage: string,
