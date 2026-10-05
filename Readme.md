@@ -10,7 +10,7 @@ Built for the Arbitrum Founder House Singapore buildathon.
 
 ## Why it exists
 
-Most "AI + DeFi" demos let a model hold keys and hope for the best. Yield Pilot takes the opposite approach: the model only proposes, and the code and the contract decide.
+Most "AI and DeFi" demos let a model hold keys and hope for the best. Yield Pilot takes the opposite approach: the model only proposes,the code and the contract decide.
 
 - The AI is a **decision-maker, not a custodian**.
 - Its permissions are narrow: allocate idle funds, move funds between whitelisted strategies, pull funds back.
